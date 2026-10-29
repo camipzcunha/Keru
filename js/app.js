@@ -34,6 +34,13 @@ const OUT_REASONS = {
   outro:   'Outro motivo',
 };
 
+const DATE_PRESETS = [
+  { label: 'Aniversário de namoro', icon: '💞' },
+  { label: 'Dia dos Namorados', md: '06-12', icon: '💌' },
+  { label: 'Natal', md: '12-25', icon: '🎄' },
+  { label: 'Formatura', icon: '🎓', yearly: false },
+];
+
 const MEASURES = [
   ['altura', 'Altura', 'cm'], ['torax', 'Tórax / Busto', 'cm'], ['cintura', 'Cintura', 'cm'],
   ['quadril', 'Quadril', 'cm'], ['pulso', 'Pulso', 'cm'],
@@ -412,13 +419,16 @@ function renderListHead() {
     ? ['camiseta', 'calca', 'calcado', 'anel'].filter(k => p.measures[k]).map(k => `<span>${MEASURES.find(m => m[0] === k)[1]} <b>${esc(p.measures[k])}</b></span>`).join('')
     : '';
 
+  const nextDate = S.view === 'parceiro' && p ? specialDates(p).find(d => d.info.days >= 0) : null;
+  const strip = (nextDate ? `<span class="next-date">${nextDate.icon} ${esc(nextDate.label)} · <b>${countdown(nextDate.info.days)}</b></span>` : '') + sizes;
+
   head.className = `list-head lh-${S.view}`;
   head.innerHTML = `
     <div class="lh-text">
       <p class="eyebrow">${copy.eyebrow}</p>
       <h1>${copy.title}</h1>
       <p class="lh-sub">${copy.sub}</p>
-      ${sizes ? `<div class="size-strip">${sizes}<button class="link-btn" data-view="perfil" data-ptab="par">ver perfil completo →</button></div>` : ''}
+      ${strip ? `<div class="size-strip">${strip}<button class="link-btn" data-view="perfil" data-ptab="par">ver perfil completo →</button></div>` : ''}
     </div>
     <div class="lh-side">
       <div class="stat"><b>${open.length}</b><span>${S.view === 'keremus' ? (open.length === 1 ? 'plano' : 'planos') : (open.length === 1 ? 'desejo' : 'desejos')}</span></div>
@@ -747,6 +757,7 @@ function renderMyProfileForm(p) {
   const pr = p.prefs || {};
   let fav = (p.favColors || []).filter(isHex);
   let avoid = (p.avoidColors || []).filter(isHex);
+  const dates = (p.dates || []).map(d => ({ label: d.label || '', date: d.date || '', yearly: d.yearly !== false }));
 
   const body = $('#profile-body');
   body.innerHTML = `
@@ -756,6 +767,16 @@ function renderMyProfileForm(p) {
         <div class="row2">
           <label class="field"><span>Nome</span><input name="name" maxlength="60" value="${esc(p.name)}"></label>
           <label class="field"><span>Aniversário</span><input name="birthday" type="date" value="${esc(p.birthday)}"></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Datas especiais</h2>
+        <p class="panel-sub">Além do aniversário: namoro, formatura, datas que importam para você.</p>
+        <div id="dates-list" class="dates-list"></div>
+        <div class="date-presets">
+          <button type="button" class="chip" id="date-add">${ICONS.plus} Outra data</button>
+          ${DATE_PRESETS.map((d, i) => `<button type="button" class="chip" data-preset="${i}">${d.icon} ${d.label}</button>`).join('')}
         </div>
       </section>
 
@@ -798,6 +819,40 @@ function renderMyProfileForm(p) {
     $('#avoid-sw').innerHTML = swatches(avoid, true) || '<span class="muted">nenhuma ainda</span>';
   };
   drawSw();
+
+  const drawDates = () => {
+    $('#dates-list').innerHTML = dates.length ? dates.map((d, i) => `
+      <div class="date-row" data-i="${i}">
+        <input class="dr-label" data-k="label" maxlength="60" value="${esc(d.label)}" placeholder="Nome da data" aria-label="Nome da data">
+        <input class="dr-date" data-k="date" type="date" value="${esc(d.date)}" aria-label="Dia">
+        <label class="dr-yearly"><input type="checkbox" data-k="yearly" ${d.yearly ? 'checked' : ''}><span>todo ano</span></label>
+        <button type="button" class="icon-btn danger" data-rmdate="${i}" title="Remover" aria-label="Remover data">${ICONS.trash}</button>
+      </div>`).join('') : '<p class="muted">Nenhuma data extra ainda.</p>';
+  };
+  const addDate = (d, focus) => {
+    dates.push(d);
+    drawDates();
+    markDirty();
+    $(`#dates-list .date-row:last-child ${focus}`)?.focus();
+  };
+  drawDates();
+  $('#dates-list').addEventListener('input', e => {
+    const row = e.target.closest('.date-row'); const k = e.target.dataset.k;
+    if (!row || !k) return;
+    dates[row.dataset.i][k] = k === 'yearly' ? e.target.checked : e.target.value;
+  });
+  $('#dates-list').addEventListener('click', e => {
+    const b = e.target.closest('[data-rmdate]'); if (!b) return;
+    dates.splice(Number(b.dataset.rmdate), 1);
+    drawDates(); markDirty();
+  });
+  $('#date-add').addEventListener('click', () => addDate({ label: '', date: '', yearly: true }, '.dr-label'));
+  $$('[data-preset]', form).forEach(b => b.addEventListener('click', () => {
+    const pr = DATE_PRESETS[b.dataset.preset];
+    const date = pr.md ? `${new Date().getFullYear()}-${pr.md}` : '';
+    addDate({ label: pr.label, date, yearly: pr.yearly !== false }, date ? '.dr-label' : '.dr-date');
+  }));
+
   form.addEventListener('input', e => { if (e.target.type !== 'color') markDirty(); });
   $('#fav-add').addEventListener('click', () => { const c = $('#fav-in').value; if (!fav.includes(c)) fav = [...fav, c]; drawSw(); markDirty(); });
   $('#avoid-add').addEventListener('click', () => { const c = $('#avoid-in').value; if (!avoid.includes(c)) avoid = [...avoid, c]; drawSw(); markDirty(); });
@@ -811,7 +866,11 @@ function renderMyProfileForm(p) {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const f = new FormData(form);
+    const validDates = dates
+      .map(d => ({ label: d.label.trim(), date: d.date, yearly: !!d.yearly }))
+      .filter(d => d.label && /^\d{4}-\d{2}-\d{2}$/.test(d.date));
     const data = {
+      dates: validDates,
       name: String(f.get('name') || '').trim() || p.name || '',
       birthday: String(f.get('birthday') || ''),
       measures: Object.fromEntries(MEASURES.map(([k]) => [k, String(f.get('m_' + k) || '').trim()])),
@@ -824,7 +883,7 @@ function renderMyProfileForm(p) {
     try {
       await store.saveProfile(me(), data);
       S.profileDirty = false;
-      toast('Perfil salvo.');
+      toast(validDates.length < dates.length ? 'Perfil salvo. Datas sem nome ou sem dia ficaram de fora.' : 'Perfil salvo.');
       renderNav();
       renderProfiles();
     } catch (err) { onDataError(err); }
@@ -842,7 +901,8 @@ function renderPartnerProfile(p) {
   const avoid = (p.avoidColors || []).filter(isHex);
   const filledMeasures = MEASURES.filter(([k]) => m[k]);
   const filledPrefs = PREFS.filter(([k]) => pr[k]);
-  const bd = birthdayInfo(p.birthday);
+  const bd = nextOccurrence(p.birthday);
+  const allDates = specialDates(p);
   const unit = (v, u) => (u === 'cm' && /^\d+([.,]\d+)?$/.test(v) ? `${esc(v)} cm` : esc(v));
 
   $('#profile-body').innerHTML = `
@@ -851,8 +911,16 @@ function renderPartnerProfile(p) {
         <span class="avatar xl alt">${esc((firstName(p.name) || '?')[0].toUpperCase())}</span>
         <div>
           <h2>${esc(p.name)}</h2>
-          ${bd ? `<p class="bday">🎂 ${bd.date} · <b>${bd.days === 0 ? 'é hoje!' : `faltam ${bd.days} ${bd.days === 1 ? 'dia' : 'dias'}`}</b></p>` : '<p class="muted">Aniversário não informado</p>'}
+          ${bd ? `<p class="bday">🎂 ${bd.date} · <b>${countdown(bd.days)}</b></p>` : '<p class="muted">Aniversário não informado</p>'}
         </div>
+      </section>
+      <section class="panel panel-wide">
+        <h2>Datas especiais</h2>
+        ${allDates.length ? `<div class="date-tiles">${allDates.map(d => `
+          <div class="date-tile ${d.info.days >= 0 && d.info.days <= 30 ? 'soon' : ''} ${d.info.days < 0 ? 'past' : ''}">
+            <span class="dt-icon">${d.icon}</span>
+            <div><b>${esc(d.label)}</b><small>${d.info.date}</small><em>${countdown(d.info.days)}</em></div>
+          </div>`).join('')}</div>` : '<p class="muted">Nenhuma data informada ainda.</p>'}
       </section>
       <section class="panel">
         <h2>Medidas</h2>
@@ -870,16 +938,39 @@ function renderPartnerProfile(p) {
     </div>`;
 }
 
-function birthdayInfo(iso) {
+// Próxima ocorrência de uma data. Datas únicas (yearly = false) podem já ter passado: days < 0.
+function nextOccurrence(iso, yearly = true) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return null;
-  const [, mo, d] = iso.split('-').map(Number);
+  const [y, mo, d] = iso.split('-').map(Number);
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  let next = new Date(today.getFullYear(), mo - 1, d);
-  if (next < today) next = new Date(today.getFullYear() + 1, mo - 1, d);
+  let next = new Date(yearly ? today.getFullYear() : y, mo - 1, d);
+  if (yearly && next < today) next = new Date(today.getFullYear() + 1, mo - 1, d);
   return {
-    date: next.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }),
+    date: next.toLocaleDateString('pt-BR', yearly ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' }),
     days: Math.round((next - today) / 86400000),
   };
+}
+
+function countdown(days) {
+  if (days < 0) return 'já passou';
+  if (days === 0) return 'é hoje!';
+  if (days === 1) return 'é amanhã';
+  return `faltam ${days} dias`;
+}
+
+// Aniversário + datas extras, das mais próximas para as mais distantes (as que já passaram por último)
+function specialDates(p) {
+  const list = [];
+  const bd = nextOccurrence(p.birthday);
+  if (bd) list.push({ label: 'Aniversário', icon: '🎂', info: bd });
+  for (const d of p.dates || []) {
+    const info = nextOccurrence(d.date, d.yearly !== false);
+    if (!info || !d.label) continue;
+    const preset = DATE_PRESETS.find(x => x.label === d.label);
+    list.push({ label: d.label, icon: preset?.icon || '🎉', info });
+  }
+  const rank = x => (x.info.days < 0 ? 100000 - x.info.days : x.info.days);
+  return list.sort((a, b) => rank(a) - rank(b));
 }
 
 /* ───────────────────────── Modais e avisos ───────────────────────── */

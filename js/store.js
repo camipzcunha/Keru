@@ -179,6 +179,7 @@ function seedDb() {
         id: L, name: 'Leo', email: 'leo@keru.demo', birthday: '1996-11-30',
         measures: { altura: '180', camiseta: 'G', camisa: '3', calca: '42', calcado: '42', torax: '100' },
         favColors: ['#1F3A5F', '#556B2F', '#F5F0E6'],
+        dates: [{ label: 'Aniversário de namoro', date: '2022-11-12', yearly: true }, { label: 'Formatura', date: '2026-12-18', yearly: false }],
         prefs: { estilo: 'Básico, minimalista', marcas: 'Reserva, Adidas', comidas: 'Ramen e café especial', hobbies: 'Corrida, vinil, games' },
       },
     },

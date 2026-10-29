@@ -1,14 +1,13 @@
 rules_version = '2';
 
 // Regras de segurança do Keru.
-// Troque os dois e-mails abaixo pelos de vocês (em letras minúsculas)
-// e publique em: Firebase Console → Firestore Database → Regras.
+// Publique em: Firebase Console → Firestore Database → Regras.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isCouple() {
       return request.auth != null
-        && request.auth.token.email in ['voce@email.com', 'namorado@email.com'];
+        && request.auth.token.email in ['camipzcunha@gmail.com', 'henriquerodriguesv18@gmail.com'];
     }
 
     // Perfil: os dois leem; cada um só edita o próprio.

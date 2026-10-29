@@ -19,6 +19,6 @@ export const firebaseConfig = {
 // 2) Os dois e-mails que podem usar o Keru, em letras minúsculas.
 //    Use os mesmos e-mails no arquivo firestore.rules.
 export const allowedEmails = [
-  // "voce@email.com",
-  // "namorado@email.com",
+  "camipzcunha@gmail.com",
+  "henriquerodriguesv18@gmail.com",
 ];

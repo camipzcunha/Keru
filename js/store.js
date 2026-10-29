@@ -39,6 +39,8 @@ async function createFirebaseStore() {
     async signUp(name, email, password) {
       const cred = await A.createUserWithEmailAndPassword(auth, email, password);
       await A.updateProfile(cred.user, { displayName: name });
+      // O login dispara antes do nome ser gravado; garante o nome certo no perfil
+      await F.setDoc(F.doc(db, 'profiles', cred.user.uid), { name, email: (cred.user.email || '').toLowerCase() }, { merge: true });
     },
     signOut: () => A.signOut(auth),
     resetPassword: email => A.sendPasswordResetEmail(auth, email),

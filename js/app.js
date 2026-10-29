@@ -6,7 +6,7 @@ import { allowedEmails } from './config.js';
 const CATEGORIES = [
   { id: 'moda',         label: 'Moda',             icon: '👕', tint: '#F6D5CF' },
   { id: 'beleza',       label: 'Beleza',           icon: '💄', tint: '#F3D9E6' },
-  { id: 'casa',         label: 'Casa',             icon: '🪴', tint: '#E3EBDD' },
+  { id: 'casa',         label: 'Casa',             icon: '🏠', tint: '#E3EBDD' },
   { id: 'tecnologia',   label: 'Tecnologia',       icon: '🎧', tint: '#DCE4F2' },
   { id: 'livros',       label: 'Livros & cultura', icon: '📚', tint: '#F4E6CC' },
   { id: 'comida',       label: 'Comida & bebida',  icon: '🍷', tint: '#F0D6D0' },

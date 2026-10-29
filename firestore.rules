@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// Regras de segurança do Keru.
+// Troque os dois e-mails abaixo pelos de vocês (em letras minúsculas)
+// e publique em: Firebase Console → Firestore Database → Regras.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isCouple() {
+      return request.auth != null
+        && request.auth.token.email in ['voce@email.com', 'namorado@email.com'];
+    }
+
+    // Perfil: os dois leem; cada um só edita o próprio.
+    match /profiles/{uid} {
+      allow read: if isCouple();
+      allow create, update: if isCouple() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // Desejos:
+    //  - owner == uid de quem criou  → lista pessoal
+    //  - owner == 'nos'              → Keremus (os dois editam)
+    // O par só pode alterar o campo "reservedBy" (reserva secreta)
+    // nos desejos pessoais do outro.
+    match /items/{id} {
+      function canEdit(owner) {
+        return owner == request.auth.uid || owner == 'nos';
+      }
+      allow read: if isCouple();
+      allow create: if isCouple() && canEdit(request.resource.data.owner);
+      allow update: if isCouple() && (
+        (canEdit(resource.data.owner) && request.resource.data.owner == resource.data.owner)
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reservedBy'])
+      );
+      allow delete: if isCouple() && canEdit(resource.data.owner);
+    }
+  }
+}

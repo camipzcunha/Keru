@@ -8,12 +8,12 @@
 
 // 1) Firebase Console → ⚙ Configurações do projeto → Seus apps → </> Web → "Configuração do SDK"
 export const firebaseConfig = {
-  apiKey: "COLE_AQUI",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyBqkSJ9RDKuxYYx56ksNETGZGl6p2D7SiE",
+  authDomain: "keru-5007a.firebaseapp.com",
+  projectId: "keru-5007a",
+  storageBucket: "keru-5007a.firebasestorage.app",
+  messagingSenderId: "176714393583",
+  appId: "1:176714393583:web:e8e002b4be54e00e8af81a",
 };
 
 // 2) Os dois e-mails que podem usar o Keru, em letras minúsculas.
